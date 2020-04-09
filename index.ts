@@ -44,6 +44,27 @@ const columns = {
   choices: ['5', '10', '20'],
 }
 
+type ColumnsConfig = {
+  [key: number]: string;
+}
+
+function drawGrid ({ rows, columns }: { rows: string; columns: string; }) {
+  let grid = []
+  let columnsConfig: ColumnsConfig = {}
+
+  for (let i = 0; i < Number(columns); i++) {
+    columnsConfig[i] = 'X'
+  }
+
+  for (let j = 0; j < Number(rows); j++) {
+    grid.push(columnsConfig)
+  }
+
+  grid.push(columnsConfig)
+
+  console.table(grid)
+}
+
 inquirer.prompt([
   start,
   userName,
@@ -53,4 +74,6 @@ inquirer.prompt([
 ])
 .then((response: any) => {
   console.log('>>> response', response)
+
+  drawGrid(response)
 })
