@@ -1,55 +1,17 @@
-import inquirer from 'inquirer'
+import fetch from 'node-fetch'
+import inquirer, { Answers } from 'inquirer'
+import { promptConfig } from './promptConfig'
 
-const start = {
-  name: 'start',
-  type: 'list',
-  message: 'What you wanna do?',
-  choices: [
-    {
-      name: 'Start a new game',
-      value: 'start',
-    },
-    {
-      name: 'Quit',
-      value: 'quit',
-    },
-  ],
-}
-
-const userName = {
-  name: 'name',
-  type: 'input',
-  message: 'Enter your name',
-  validate: (value: string) => value.length === 0 ? 'A name is required' : true,
-}
-
-const gameName = {
-  name: 'gameName',
-  type: 'input',
-  message: 'New game name',
-  validate: (value: string) => value.length === 0 ? 'A name is required' : true,
-}
-
-const rows = {
-  name: 'rows',
-  type: 'list',
-  message: 'How many rows?',
-  choices: ['5', '10', '20'],
-}
-
-const columns = {
-  name: 'columns',
-  type: 'list',
-  message: 'How many columns?',
-  choices: ['5', '10', '20'],
-}
+const API_URL = process.env.API_URL || 'http://localhost:8080'
 
 type ColumnsConfig = {
   [key: number]: string;
 }
 
+type Grid = ColumnsConfig[]
+
 function drawGrid ({ rows, columns }: { rows: string; columns: string; }) {
-  let grid = []
+  let grid: Grid = []
   let columnsConfig: ColumnsConfig = {}
 
   for (let i = 0; i < Number(columns); i++) {
@@ -65,15 +27,33 @@ function drawGrid ({ rows, columns }: { rows: string; columns: string; }) {
   console.table(grid)
 }
 
-inquirer.prompt([
-  start,
-  userName,
-  gameName,
-  rows,
-  columns,
-])
-.then((response: any) => {
-  console.log('>>> response', response)
+(async () => {
+  const {
+    gameName,
+    rows,
+    columns,
+    mines,
+    userName,
+  }: Answers = await inquirer.prompt([ ...promptConfig ])
 
-  drawGrid(response)
-})
+  try {
+    const game = await fetch(`${API_URL}/games`, {
+      method: 'post',
+      body: JSON.stringify({
+        name: gameName,
+        rows: Number(rows),
+        cols: Number(columns),
+        mines: Number(mines),
+        username: userName,
+      }),
+      headers: { 'Content-Type': 'application/json' },
+    })
+    console.log('>>> game response', game)
+
+    const jsonGame = await game.json()
+
+    console.log('>>> created game', jsonGame)
+  } catch (error) {
+    console.error('>>> error', error)
+  }
+})()
