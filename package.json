@@ -14,9 +14,11 @@
   "devDependencies": {
     "@types/inquirer": "^6.5.0",
     "@types/node": "^13.11.0",
+    "@types/node-fetch": "^2.5.5",
     "typescript": "^3.8.3"
   },
   "dependencies": {
-    "inquirer": "^7.1.0"
+    "inquirer": "^7.1.0",
+    "node-fetch": "^2.6.0"
   }
 }
