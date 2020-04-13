@@ -2,10 +2,21 @@ export type ColumnsConfig = {
   [key: number]: string;
 }
 
-export type Response = {
+type Response = {
   success: boolean;
   status: number;
 }
+
+export type ClickResponse = {
+  result: {
+    name: string;
+    rows: number;
+    cols: number;
+    mines: number;
+    status: string;
+    grid: any[];
+  };
+} & Response;
 
 export type CreateGameResponse = {
   result: {
@@ -37,4 +48,16 @@ export type GameConfig = {
   username: string;
 };
 
-export type Grid = ColumnsConfig[]
+export type Cell = {
+  mine: boolean;
+  clicked: boolean;
+  coordinates: string;
+  flagged: boolean;
+  marked: boolean;
+};
+
+export type Row = Cell[];
+
+export type Grid = Row[];
+
+export type DrewGrid = ColumnsConfig[];
