@@ -43,5 +43,16 @@ export const promptConfig = {
     type: 'list',
     message: 'How many mines?',
     choices: ['5', '10', '20'],
+  },
+  click: {
+    name: 'click',
+    type: 'input',
+    message: 'Enter column and row to reveal (5, 3):',
+  },
+  clickType: {
+    name: 'clickType',
+    type: 'list',
+    message: 'Click type:',
+    choices: ['click', 'flag', 'mark'],
   }
 }
