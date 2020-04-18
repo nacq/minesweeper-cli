@@ -22,18 +22,19 @@ const API_URL = process.env.API_URL || 'http://localhost:8080'
  * blank - cell clicked
  */
 function drawGrid (data: Grid) {
-  let grid: DrewGrid = []
-  let columnsConfig: ColumnsConfig = {}
+  const grid: DrewGrid = []
 
   for (let i = 0; i < data.length; i++) {
+    const columnsConfig: ColumnsConfig = {}
+
     for (let j = 0; j < data[i].length; j++) {
       const cell = data[i][j]
 
-      if (cell.clicked && cell.flagged) {
+      if (cell.flagged) {
         columnsConfig[j] = 'f'
-      } else if (cell.clicked && cell.marked) {
+      } else if (cell.marked) {
         columnsConfig[j] = '?'
-      } else if (cell.clicked && cell.mine) {
+      } else if (cell.mine) {
         columnsConfig[j] = 'm'
       } else if (cell.clicked) {
         columnsConfig[j] = ' '
@@ -41,6 +42,7 @@ function drawGrid (data: Grid) {
         columnsConfig[j] = 'x'
       }
     }
+
     grid.push(columnsConfig)
   }
 
@@ -93,8 +95,15 @@ async function createGame ({
     }),
     headers: { 'Content-Type': 'application/json' },
   })
+  const { result } = await game.json()
+  const startedGame = await fetch(
+    `${API_URL}/games/${result.name}/users/${result.username}`,
+    {
+      method: 'post',
+    }
+  )
 
-  return game.json()
+  return startedGame.json()
 }
 
 /**
@@ -105,16 +114,15 @@ async function createGame ({
 async function clickCell(
   gameName: string,
   userName: string,
-) {
+): Promise<undefined | boolean> {
   const { click, clickType }: Answers = await inquirer.prompt([ promptConfig.click, promptConfig.clickType ])
   const [column, row] = click.split(',')
 
-  const clickResponse: Response = await fetch(`${API_URL}/games/${gameName}/users/${userName}`, {
+  const clickResponse: Response = await fetch(`${API_URL}/games/${gameName}/users/${userName}/click`, {
     method: 'post',
     body: JSON.stringify({
-      // back end does not start from 0
-      row: Number(row) + 1,
-      col: Number(column) + 1,
+      row: Number(row),
+      col: Number(column),
       click_type: clickType,
     }),
     headers: { 'Content-Type': 'application/json' },
@@ -126,17 +134,22 @@ async function clickCell(
     throw new Error('Can not click cell')
   }
 
-  drawGrid(clickResponseJson.result.grid)
+  if (!clickResponseJson.result.game && clickResponseJson.result.message) {
+    return Promise.resolve(true)
+  }
+
+  // @ts-ignore ignoring since it's unreachable if game is not defined
+  drawGrid(clickResponseJson.result.game?.grid)
 }
 
 (async () => {
   const { userName }: Answers = await inquirer.prompt([ promptConfig.userName ])
+  let gameLost: undefined | boolean = false
 
   try {
     const createUserResponse = await createUser(userName)
 
     if (!createUserResponse.success) {
-      console.log('>>>', createUserResponse)
       throw new Error('Can not create user')
     }
 
@@ -148,7 +161,7 @@ async function clickCell(
       promptConfig.mines,
     ])
 
-    const { success, result }: CreateGameResponse = await createGame({
+    const createGameResponse: CreateGameResponse = await createGame({
       name: gameName,
       rows: Number(rows),
       cols: Number(columns),
@@ -156,14 +169,19 @@ async function clickCell(
       username: createUserResponse.result.username,
     })
 
-    if (!success) {
+    if (!createGameResponse.success) {
       throw new Error('Can not create game')
     }
 
+    const { result } = createGameResponse
+
     drawInitialGrid(result.rows, result.cols)
 
-    await clickCell(result.name, result.username)
+    while (!gameLost) {
+      gameLost = await clickCell(result.name, result.username)
+    }
 
+    process.exit(0)
   } catch (error) {
     console.log('>>>', error)
 
