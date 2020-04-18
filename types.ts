@@ -1,3 +1,5 @@
+export const DUPLICATE_ENTRY_ERROR = 'duplicate_entry'
+
 export type ColumnsConfig = {
   [key: number]: string;
 }
@@ -5,6 +7,11 @@ export type ColumnsConfig = {
 type Response = {
   success: boolean;
   status: number;
+}
+
+export type ErrorResponse = {
+  type: string;
+  message: string;
 }
 
 export type ClickResponse = {

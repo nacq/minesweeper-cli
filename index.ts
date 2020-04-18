@@ -2,11 +2,13 @@ import fetch, { Response } from 'node-fetch'
 import inquirer, { Answers } from 'inquirer'
 import { promptConfig } from './promptConfig'
 import {
+  DUPLICATE_ENTRY_ERROR,
   ClickResponse,
   ColumnsConfig,
   CreateGameResponse,
   CreateUserResponse,
   DrewGrid,
+  ErrorResponse,
   GameConfig,
   Grid,
 } from './types'
@@ -62,16 +64,37 @@ function drawInitialGrid (rows: number, columns: number) {
   console.table(grid)
 }
 
-async function createUser (gameName: string): Promise<CreateUserResponse> {
-  const user = await fetch(`${API_URL}/users`, {
-    method: 'post',
-    body: JSON.stringify({
-      username: gameName,
-    }),
-    headers: { 'Content-Type': 'application/json' },
-  })
+/**
+ * 1 - prompt to ask for user name
+ * 2 - execute api call
+ * 3 - handle error | return created user
+ */
+async function createUser (): Promise<string | undefined> {
+  try {
+    const { userName }: Answers = await inquirer.prompt([ promptConfig.userName ])
+    const createUserResponse = await fetch(`${API_URL}/users`, {
+      method: 'post',
+      body: JSON.stringify({
+        username: userName,
+      }),
+      headers: { 'Content-Type': 'application/json' },
+    })
 
-  return user.json()
+    const { result, type }: CreateUserResponse & ErrorResponse = await createUserResponse.json()
+
+    // no result and type means error
+    if (!result && type) {
+      throw new Error(type)
+    }
+
+    return result.username
+  } catch (error) {
+    if (error.message === DUPLICATE_ENTRY_ERROR) {
+      await createUser()
+    } else {
+      throw error
+    }
+  }
 }
 
 async function createGame ({
@@ -140,15 +163,10 @@ async function clickCell(
 }
 
 (async () => {
-  const { userName }: Answers = await inquirer.prompt([ promptConfig.userName ])
   let gameLost: undefined | boolean = false
 
   try {
-    const createUserResponse = await createUser(userName)
-
-    if (!createUserResponse.success) {
-      throw new Error('Can not create user')
-    }
+    const userName = await createUser()
 
     const { gameName, rows, columns, mines }: Answers = await inquirer.prompt([
       promptConfig.start,
@@ -163,7 +181,8 @@ async function clickCell(
       rows: Number(rows),
       cols: Number(columns),
       mines: Number(mines),
-      username: createUserResponse.result.username,
+      // @ts-ignore ignoring this since the createGame definition says it returns undefined which is not possible
+      username: userName,
     })
 
     if (!createGameResponse.success) {
