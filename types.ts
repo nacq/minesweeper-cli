@@ -9,12 +9,22 @@ type Response = {
 
 export type ClickResponse = {
   result: {
-    name: string;
-    rows: number;
-    cols: number;
-    mines: number;
-    status: string;
-    grid: any[];
+    game?: {
+      name: string;
+      rows: number;
+      cols: number;
+      mines: number;
+      status: string;
+      grid: any[];
+    },
+    clicked?: {
+      row: number;
+      col: number;
+      click_type: string;
+    },
+    // the existence of these two props mean the game is lost
+    message?: string;
+    clicks?: number;
   };
 } & Response;
 
