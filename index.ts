@@ -17,7 +17,6 @@ const API_URL = process.env.API_URL || 'http://localhost:8080'
  * Draws a grid based on the back end response
  * f - flagged cell
  * ? - marked cell
- * m - mine
  * x - cell not clicked
  * blank - cell clicked
  */
@@ -34,8 +33,6 @@ function drawGrid (data: Grid) {
         columnsConfig[j] = 'f'
       } else if (cell.marked) {
         columnsConfig[j] = '?'
-      } else if (cell.mine) {
-        columnsConfig[j] = 'm'
       } else if (cell.clicked) {
         columnsConfig[j] = ' '
       } else {
